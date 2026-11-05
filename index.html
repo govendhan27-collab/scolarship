@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Organ Donor and Finder</title>
+<style>
+:root{--bg:#fafaf7;--card:#fff;--tx:#1d2420;--mu:#5d6862;--ac:#b3261e;--ac2:#1f6f5c;--bd:#e0e0d8;--ok:#1f6f5c;--wa:#9a6700;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151a17;--card:#1f2622;--tx:#eceee9;--mu:#a2aca6;--ac:#ff7b72;--ac2:#4fc3a1;--bd:#334039;--ok:#4fc3a1;--wa:#e3b341;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151a17;--card:#1f2622;--tx:#eceee9;--mu:#a2aca6;--ac:#ff7b72;--ac2:#4fc3a1;--bd:#334039;--ok:#4fc3a1;--wa:#e3b341;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--bd);padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+h1{font-size:18px;margin:0;color:var(--ac)}h2{margin:.2em 0 .5em;font-size:20px}h3{margin:.2em 0 .4em;font-size:16px}
+nav{display:flex;flex-wrap:wrap;gap:6px}
+button,select,input{font:inherit;color:var(--tx)}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+button.sec{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+button.ok{background:var(--ok);color:#fff}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ac2);outline-offset:2px}
+main{max-width:960px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat{font-size:28px;font-weight:700;color:var(--ac2)}
+label{display:block;font-size:14px;color:var(--mu);margin:8px 0 2px}
+input,select{width:100%;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg)}
+.row{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);color:var(--mu)}
+.tag.v{color:var(--ok);border-color:var(--ok)}.tag.p{color:var(--wa);border-color:var(--wa)}.tag.u{color:var(--ac);border-color:var(--ac)}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{text-align:left;padding:6px;border-bottom:1px solid var(--bd)}
+.msg{padding:8px 12px;border-radius:8px;background:var(--card);border:1px solid var(--ac2);margin-bottom:12px}
+details{border-bottom:1px solid var(--bd);padding:6px 0}.mu{color:var(--mu);font-size:14px}
+.flex{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+<header>
+<h1>♥ Organ Donor &amp; Finder</h1>
+<nav id="nav" aria-label="Main"></nav>
+</header>
+<main id="app"></main>
+<script>
+const ORG=["Kidney","Liver","Heart","Lung","Pancreas","Cornea"],BG=["O-","O+","A-","A+","B-","B+","AB-","AB+"],CITY=["Chennai","Coimbatore","Madurai","Bengaluru","Hyderabad"];
+const GIVE={"O-":BG,"O+":["O+","A+","B+","AB+"],"A-":["A-","A+","AB-","AB+"],"A+":["A+","AB+"],"B-":["B-","B+","AB-","AB+"],"B+":["B+","AB+"],"AB-":["AB-","AB+"],"AB+":["AB+"]};
+let S={users:[
+{id:1,name:"Admin Staff",email:"admin@platform.in",role:"admin",verified:true},
+{id:2,name:"Ravi Kumar",email:"ravi@mail.in",phone:"98400 11111",role:"donor",verified:true},
+{id:3,name:"Meena S",email:"meena@mail.in",phone:"98400 22222",role:"donor",verified:true},
+{id:4,name:"Arun P",email:"arun@mail.in",phone:"98400 33333",role:"donor",verified:true},
+{id:5,name:"Divya R",email:"divya@mail.in",phone:"98400 44444",role:"donor",verified:false},
+{id:6,name:"City Care Hospital",email:"citycare@hosp.in",phone:"044 2222 0000",role:"requester",verified:true,reg:"TN-HOSP-1042"},
+{id:7,name:"New Patient Kiran",email:"kiran@mail.in",phone:"98400 55555",role:"requester",verified:false}],
+pledges:{2:{organs:["Kidney","Liver"],bg:"O+",age:34,city:"Chennai",consent:true,status:"active"},3:{organs:["Kidney","Cornea"],bg:"A+",age:41,city:"Chennai",consent:true,status:"active"},4:{organs:["Liver"],bg:"B+",age:29,city:"Madurai",consent:true,status:"active"},5:{organs:["Kidney"],bg:"O-",age:38,city:"Coimbatore",consent:true,status:"active"}},
+reqs:[],contacts:[],audit:[],notes:[],me:null,view:"home",msg:"",results:null,nid:20};
+const $=s=>document.querySelector(s),U=id=>S.users.find(u=>u.id==id),esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function log(a,u){S.audit.unshift({t:new Date().toLocaleTimeString(),u:u??S.me?.id??"-",a})}
+function note(uid,t){S.notes.unshift({uid,t});}
+function go(v,m=""){S.view=v;S.msg=m;render()}
+function render(){
+ const me=S.me?U(S.me):null,r=me?.role;
+ const items=[["home","Home"],["info","Awareness &amp; FAQ"]];
+ if(!me)items.push(["login","Login / Register"]);
+ if(r=="donor")items.push(["donor","My pledge"]);
+ if(r=="requester")items.push(["req","Requests &amp; Finder"]);
+ if(r=="admin")items.push(["admin","Admin"]);
+ if(me)items.push(["notes","Notifications ("+S.notes.filter(n=>n.uid==me.id).length+")"]);
+ $("#nav").innerHTML=items.map(([k,l])=>`<button class="${S.view==k?'':'sec'}" onclick="go('${k}')">${l}</button>`).join("")+(me?`<button class="sec" onclick="logout()">Log out (${esc(me.name.split(" ")[0])})</button>`:"");
+ const V={home,info,login,donor,req,admin,notes:notesV};
+ $("#app").innerHTML=(S.msg?`<div class="msg" role="status">${S.msg}</div>`:"")+(V[S.view]||home)(me);
+ window.scrollTo(0,0)
+}
+function logout(){log("Logout");S.me=null;go("home","Logged out.")}
+function home(){return `<div class="card"><h2>Connecting verified donors with verified patients</h2><p>Pledge to donate, or find compatible donors through hospitals and patients, with admin verification on every account. This platform does not diagnose, allocate organs or replace the official transplant authority (NOTTO). Organs are never sold or traded.</p>
+<div class="flex"><button onclick="go('login')">Get started</button><button class="sec" onclick="go('info')">How it works</button></div></div>
+<div class="grid"><div class="card"><h3>1. Register</h3><p class="mu">Sign up with email or phone and verify an OTP.</p></div><div class="card"><h3>2. Get verified</h3><p class="mu">Admins verify donors, hospitals and requests.</p></div><div class="card"><h3>3. Match</h3><p class="mu">Search by organ, blood group and city. Contact details stay hidden until the donor accepts.</p></div></div>
+<div class="card"><h3>Platform snapshot</h3><div class="grid">${stats()}</div></div>`}
+function stats(){const d=S.users.filter(u=>u.role=="donor"&&u.verified).length,p=S.users.filter(u=>!u.verified&&u.role!="admin").length+S.reqs.filter(r=>r.status=="pending").length;
+ return [["Verified donors",d],["Requests",S.reqs.length],["Matches (accepted)",S.contacts.filter(c=>c.status=="accepted").length],["Pending verifications",p]].map(([l,n])=>`<div><div class="stat">${n}</div><div class="mu">${l}</div></div>`).join("")}
+function info(){return `<div class="card"><h2>Donation process</h2><ol><li>A donor pledges organs with consent.</li><li>A verified hospital or patient posts a request.</li><li>The finder lists compatible, verified donors ranked by match.</li><li>The requester sends a contact request; the donor accepts or declines.</li><li>Only after acceptance are contact details shown.</li></ol></div>
+<div class="card"><h2>FAQs</h2>
+<details><summary>Who can search for donors?</summary><p>Only admin-verified patients or hospitals.</p></details>
+<details><summary>Can I withdraw my pledge?</summary><p>Yes, you can edit, pause or withdraw it at any time.</p></details>
+<details><summary>Is my data private?</summary><p>Contact details are hidden until you accept a request, and you can delete your data.</p></details>
+<details><summary>Can organs be bought or sold?</summary><p>No. Trading organs is illegal under the Transplantation of Human Organs and Tissues Act, 1994.</p></details></div>`}
+function login(){return `<div class="row"><div class="card"><h2>Log in (demo accounts)</h2><p class="mu">Pick a seeded account to explore each role.</p>
+${S.users.map(u=>`<div class="flex" style="margin:6px 0"><button class="sec" onclick="doLogin(${u.id})">${esc(u.name)}</button><span class="tag ${u.verified?'v':'p'}">${u.role} · ${u.verified?'verified':'pending'}</span></div>`).join("")}
+<p class="mu">Forgot password? <a href="#" onclick="go('login','Password reset link sent (demo).');return false">Reset</a></p></div>
+<div class="card"><h2>Register</h2>
+<label for="rn">Full name / hospital name</label><input id="rn">
+<label for="rc">Email or phone</label><input id="rc">
+<label for="rr">I am a</label><select id="rr"><option value="donor">Donor</option><option value="requester">Patient / Hospital</option></select>
+<label for="rp">Password (min 8 chars)</label><input id="rp" type="password">
+<div id="otpbox"><button style="margin-top:10px" onclick="sendOtp()">Send OTP</button></div></div></div>`}
+let OTP=null;
+function sendOtp(){const n=$("#rn").value.trim(),c=$("#rc").value.trim();if(!n||!c||$("#rp").value.length<8){S.msg="Enter name, email/phone and a password of 8+ characters.";return render(),0}
+ OTP=String(Math.floor(1000+Math.random()*9000));$("#otpbox").innerHTML=`<p class="mu">Demo OTP sent: <b>${OTP}</b></p><label for="ro">Enter OTP</label><input id="ro" inputmode="numeric"><button style="margin-top:10px" onclick="reg()">Verify &amp; register</button>`}
+function reg(){if($("#ro").value!=OTP)return go("login","Incorrect OTP.");
+ const id=S.nid++;S.users.push({id,name:$("#rn").value.trim(),email:$("#rc").value.trim(),phone:$("#rc").value.trim(),role:$("#rr").value,verified:false});
+ log("Registered",id);S.me=id;go(S.users.at(-1).role=="donor"?"donor":"req","Registered. Your account awaits admin verification.")}
+function doLogin(id){S.me=id;log("Login",id);const r=U(id).role;go(r=="donor"?"donor":r=="requester"?"req":"admin","Welcome, "+esc(U(id).name)+".")}
+function gate(me){return me.verified?"":`<div class="msg">Your account is pending admin verification. You can’t search or be listed yet.</div>`}
+function donor(me){const p=S.pledges[me.id]||{organs:[],bg:"O+",age:30,city:"Chennai",consent:false,status:"none"};
+ const inc=S.contacts.filter(c=>c.donor==me.id);
+ return `${gate(me)}<div class="card"><h2>My pledge <span class="tag ${p.status=="active"?'v':'p'}">${p.status}</span></h2>
+<label>Organs offered</label><div class="flex">${ORG.map(o=>`<label style="margin:0"><input type="checkbox" style="width:auto" name="og" value="${o}" ${p.organs.includes(o)?'checked':''}> ${o}</label>`).join("")}</div>
+<div class="row"><div><label for="pb">Blood group</label><select id="pb">${BG.map(b=>`<option ${b==p.bg?'selected':''}>${b}</option>`).join("")}</select></div>
+<div><label for="pa">Age</label><input id="pa" type="number" min="18" max="80" value="${p.age}"></div>
+<div><label for="pc">City</label><select id="pc">${CITY.map(c=>`<option ${c==p.city?'selected':''}>${c}</option>`).join("")}</select></div></div>
+<label style="color:var(--tx)"><input type="checkbox" id="pn" style="width:auto" ${p.consent?'checked':''}> I give informed consent to be listed as a donor.</label>
+<div class="flex" style="margin-top:10px"><button onclick="savePledge()">Save pledge</button>
+${p.status!="none"?`<button class="sec" onclick="pledgeStatus('${p.status=="active"?'paused':'active'}')">${p.status=="active"?'Pause':'Resume'}</button><button class="sec" onclick="pledgeStatus('withdrawn')">Withdraw</button><button class="sec" onclick="delData()">Delete my data</button>`:""}</div></div>
+<div class="card"><h2>Contact requests</h2>${inc.length?inc.map(c=>{const q=S.reqs.find(r=>r.id==c.req),rq=U(q.by);return `<div style="border-bottom:1px solid var(--bd);padding:8px 0"><b>${esc(rq.name)}</b> needs a <b>${q.organ}</b> (${q.bg}, ${q.urgency}, ${q.city}) <span class="tag ${c.status=='accepted'?'v':c.status=='pending'?'p':'u'}">${c.status}</span>
+${c.status=="pending"?`<div class="flex" style="margin-top:6px"><button class="ok" onclick="answer(${c.id},'accepted')">Accept</button><button class="sec" onclick="answer(${c.id},'declined')">Decline</button></div>`:""}</div>`}).join(""):'<p class="mu">No requests yet.</p>'}</div>`}
+function savePledge(){const me=U(S.me),o=[...document.querySelectorAll('[name=og]:checked')].map(x=>x.value);
+ if(!o.length||!$("#pn").checked)return go("donor","Select at least one organ and give consent.");
+ S.pledges[me.id]={organs:o,bg:$("#pb").value,age:+$("#pa").value,city:$("#pc").value,consent:true,status:"active"};log("Pledge saved");go("donor","Pledge saved.")}
+function pledgeStatus(s){S.pledges[S.me].status=s;log("Pledge "+s);go("donor","Pledge "+s+".")}
+function delData(){delete S.pledges[S.me];log("Data deleted");go("donor","Your pledge data was deleted.")}
+function answer(id,st){const c=S.contacts.find(x=>x.id==id);c.status=st;log("Contact "+st);note(S.reqs.find(r=>r.id==c.req).by,"Donor responded to your contact request: "+st);go("donor","Response sent.")}
+function req(me){const mine=S.reqs.filter(r=>r.by==me.id);
+ return `${gate(me)}<div class="card"><h2>Post a request</h2><div class="row">
+<div><label for="qo">Organ needed</label><select id="qo">${ORG.map(o=>`<option>${o}</option>`).join("")}</select></div>
+<div><label for="qb">Blood group</label><select id="qb">${BG.map(b=>`<option>${b}</option>`).join("")}</select></div>
+<div><label for="qu">Urgency</label><select id="qu"><option>Critical</option><option>High</option><option>Normal</option></select></div>
+<div><label for="qc">City</label><select id="qc">${CITY.map(c=>`<option>${c}</option>`).join("")}</select></div></div>
+<button style="margin-top:10px" onclick="postReq()">Submit for verification</button></div>
+<div class="card"><h2>My requests</h2>${mine.length?`<div class="scroll"><table><tr><th>Organ</th><th>Blood</th><th>Urgency</th><th>City</th><th>Status</th></tr>${mine.map(r=>`<tr><td>${r.organ}</td><td>${r.bg}</td><td>${r.urgency}</td><td>${r.city}</td><td><span class="tag ${r.status=='verified'?'v':r.status=='rejected'?'u':'p'}">${r.status}</span>${r.reason?" "+esc(r.reason):""}</td></tr>`).join("")}</table></div>`:'<p class="mu">No requests yet.</p>'}</div>
+<div class="card"><h2>Donor finder</h2>${!me.verified?'<p class="mu">Available after verification.</p>':`<div class="row"><div><label for="fo">Organ</label><select id="fo">${ORG.map(o=>`<option>${o}</option>`).join("")}</select></div><div><label for="fb">Recipient blood group</label><select id="fb">${BG.map(b=>`<option>${b}</option>`).join("")}</select></div><div><label for="fc">City</label><select id="fc">${CITY.map(c=>`<option>${c}</option>`).join("")}</select></div></div><button style="margin-top:10px" onclick="search()">Search verified donors</button>${results(me)}`}</div>`}
+function postReq(){const me=U(S.me);if(!me.verified)return go("req","Verification required first.");
+ S.reqs.push({id:S.nid++,by:me.id,organ:$("#qo").value,bg:$("#qb").value,urgency:$("#qu").value,city:$("#qc").value,status:"pending"});log("Request posted");go("req","Request submitted for admin verification.")}
+function search(){const o=$("#fo").value,b=$("#fb").value,c=$("#fc").value;log("Search "+o+" "+b+" "+c);
+ const list=Object.entries(S.pledges).map(([id,p])=>({id:+id,p,u:U(id)})).filter(x=>x.u.verified&&x.p.status=="active"&&x.p.consent&&x.p.organs.includes(o)&&GIVE[x.p.bg].includes(b))
+ .map(x=>({...x,score:(x.p.bg==b?60:30)+(x.p.city==c?40:0)})).sort((a,z)=>z.score-a.score);
+ S.results={o,b,c,list};S.msg="";render()}
+function results(me){const R=S.results;if(!R)return"";
+ const my=S.reqs.filter(r=>r.by==me.id&&r.status=="verified"&&r.organ==R.o);
+ if(!R.list.length)return `<p class="mu">No compatible verified donors found.</p>`;
+ return `<div class="scroll"><table><tr><th>Donor</th><th>Blood</th><th>Age</th><th>City</th><th>Match</th><th></th></tr>${R.list.map(x=>{const c=S.contacts.find(k=>k.donor==x.id&&S.reqs.find(r=>r.id==k.req)?.by==me.id);
+ return `<tr><td>Donor #${x.id}</td><td>${x.p.bg}</td><td>${x.p.age}</td><td>${x.p.city}</td><td>${x.score}%</td><td>${c?(c.status=="accepted"?`<span class="tag v">Accepted</span><br>${esc(x.u.name)}<br>${esc(x.u.phone)}<br>${esc(x.u.email)}`:`<span class="tag p">${c.status}</span>`):(my.length?`<button onclick="contact(${x.id},${my[0].id})">Contact request</button>`:'<span class="mu">Need a verified request</span>')}</td></tr>`}).join("")}</table></div><p class="mu">Names and contact details are hidden until the donor accepts.</p>`}
+function contact(d,r){S.contacts.push({id:S.nid++,req:r,donor:d,status:"pending",at:Date.now()});log("Contact request sent");note(d,"You have a new contact request.");go("req","Contact request sent. The donor will be notified.")}
+function admin(){const pend=S.users.filter(u=>!u.verified&&u.role!="admin"),pr=S.reqs.filter(r=>r.status=="pending");
+ return `<div class="card"><h2>Dashboard</h2><div class="grid">${stats()}</div></div>
+<div class="card"><h2>Pending accounts</h2>${pend.length?pend.map(u=>`<div class="flex" style="margin:6px 0"><span><b>${esc(u.name)}</b> <span class="tag">${u.role}</span>${u.reg?" Reg "+esc(u.reg):""}</span><button class="ok" onclick="verU(${u.id},1)">Verify</button><button class="sec" onclick="verU(${u.id},0)">Reject</button></div>`).join(""):'<p class="mu">None.</p>'}</div>
+<div class="card"><h2>Pending requests</h2>${pr.length?pr.map(r=>`<div class="flex" style="margin:6px 0"><span>${esc(U(r.by).name)}: ${r.organ}, ${r.bg}, ${r.city}</span><button class="ok" onclick="verR(${r.id},1)">Verify</button><button class="sec" onclick="verR(${r.id},0)">Reject</button></div>`).join(""):'<p class="mu">None.</p>'}</div>
+<div class="card"><h2>Audit log</h2><div class="scroll"><table><tr><th>Time</th><th>User</th><th>Action</th></tr>${S.audit.slice(0,25).map(a=>`<tr><td>${a.t}</td><td>${a.u=="-"?"-":esc(U(a.u)?.name||a.u)}</td><td>${esc(a.a)}</td></tr>`).join("")}</table></div></div>`}
+function verU(id,ok){let reason="";if(!ok){reason=prompt("Reason for rejection?")||"No reason given";S.users=S.users.filter(u=>u.id!=id);log("Rejected user: "+reason)}else{U(id).verified=true;log("Verified user");note(id,"Your account has been verified.")}go("admin",ok?"User verified.":"User rejected.")}
+function verR(id,ok){const r=S.reqs.find(x=>x.id==id);if(ok){r.status="verified";note(r.by,"Your request was verified.")}else{r.status="rejected";r.reason=prompt("Reason for rejection?")||"No reason given";note(r.by,"Your request was rejected: "+r.reason)}log("Request "+r.status);go("admin","Request "+r.status+".")}
+function notesV(me){const n=S.notes.filter(x=>x.uid==me.id);return `<div class="card"><h2>Notifications</h2><p class="mu">Shown here in place of email/SMS in this demo.</p>${n.length?n.map(x=>`<p>• ${esc(x.t)}</p>`).join(""):'<p class="mu">Nothing yet.</p>'}</div>`}
+render();
+</script>
+</body>
+</html>
